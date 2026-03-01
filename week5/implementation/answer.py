@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_chroma import Chroma
@@ -10,11 +11,15 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-MODEL = "gpt-4.1-nano"
+MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
+# MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+# MODEL = "llama3.2:1b"  # Local Qwen 
+
+
 DB_NAME = str(Path(__file__).parent.parent / "vector_db")
 
-# embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 RETRIEVAL_K = 10
 
 SYSTEM_PROMPT = """
@@ -28,8 +33,18 @@ Context:
 
 vectorstore = Chroma(persist_directory=DB_NAME, embedding_function=embeddings)
 retriever = vectorstore.as_retriever()
-llm = ChatOpenAI(temperature=0, model_name=MODEL)
-
+llm = ChatOpenAI(
+    temperature=0,
+    model_name=MODEL,
+    openai_api_key=os.environ['OPEN_ROUTER_API_KEY'],
+    openai_api_base="https://openrouter.ai/api/v1"
+)
+# llm = ChatOpenAI(                                      # Local Ollama
+#     temperature=0,
+#     model_name=MODEL,
+#     openai_api_key="not-needed",
+#     openai_api_base="http://localhost:11434/v1"
+# )
 
 def fetch_context(question: str) -> list[Document]:
     """
